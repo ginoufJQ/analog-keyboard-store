@@ -20,7 +20,7 @@ def env(tmp_path):
         outbox_dir=tmp_path / 'outbox', admin_key='admin-' + 'a' * 40,
         deposit_key='deposit-' + 'b' * 40, encryption_key=Fernet.generate_key().decode(),
         public_url='http://testserver', allowed_origins=('https://store.example.com',),
-        order_limit=200, worker_enabled=False,
+        order_limit=200, worker_enabled=False, price=3000,
     )
     app = create_app(settings)
     with TestClient(app) as client:

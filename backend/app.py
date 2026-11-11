@@ -87,7 +87,7 @@ def create_app(settings=None):
         response.headers['Referrer-Policy'] = 'no-referrer'
         response.headers['X-Frame-Options'] = 'DENY'
         response.headers['Cache-Control'] = 'no-store'
-        response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
         return response
 
     def admin(authorization: str = Header(default='')):
@@ -122,6 +122,13 @@ def create_app(settings=None):
     def deposits(data: DepositInput):
         row, created = store.receive_deposit(data)
         return JSONResponse(row, status_code=201 if created else 200)
+
+    @app.get('/api/orders/{order_id}/payment-qr')
+    def payment_qr(order_id: str, authorization: str = Header(default='')):
+        if not authorization.startswith('Bearer ') or len(authorization) > 200:
+            raise HTTPException(401, '주문 조회 토큰이 필요합니다')
+        path = store.payment_qr(order_id, authorization[7:])
+        return FileResponse(path, media_type='image/png', headers={'Cache-Control': 'no-store'})
 
     @app.post('/api/deposits/parse', dependencies=[Depends(deposit_auth)])
     def parse(data: ParseInput):

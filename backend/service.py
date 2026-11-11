@@ -5,6 +5,7 @@ import secrets
 import sqlite3
 import time
 from uuid import uuid4
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from cryptography.fernet import Fernet
 from fastapi import HTTPException
@@ -84,9 +85,31 @@ class Store:
                        (order_id, str(data.email), data.depositor_name, normalize_name(data.depositor_name), price,
                         now, now + self.settings.order_hours * 3600, digest(token), now))
             self._match(db)
+            row = db.execute('SELECT * FROM orders WHERE id=?', (order_id,)).fetchone()
+            payment = self._payment_options(row)
         return {'id': order_id, 'status_token': token, 'amount': price, 'expires_at': now + self.settings.order_hours * 3600,
                 'bank_account': self.settings.bank_account if self.settings.live_sales else '모의 운영 — 실제 송금하지 마세요',
-                'bank_holder': self.settings.bank_holder if self.settings.live_sales else '모의 예금주'}
+                'bank_holder': self.settings.bank_holder if self.settings.live_sales else '모의 예금주', **payment}
+
+    def _payment_options(self, order):
+        result = {'payment_url': None, 'payment_qr_url': None}
+        if not self.settings.live_sales or order['status'] not in ('PENDING', 'MATCHED_UNVERIFIED', 'REVIEW_REQUIRED') or order['expires_at'] <= time.time():
+            return result
+        if self.settings.toss_transfer_url:
+            parsed = urlsplit(self.settings.toss_transfer_url)
+            query = [(k, v) for k, v in parse_qsl(parsed.query) if k != 'amount']
+            query.append(('amount', str(order['amount'])))
+            result['payment_url'] = urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query), ''))
+        qr = self.settings.payment_qr_file
+        if qr and qr.is_file() and order['amount'] == self.settings.payment_qr_amount:
+            result['payment_qr_url'] = f"/api/orders/{order['id']}/payment-qr"
+        return result
+
+    def payment_qr(self, order_id, token):
+        row = self.order_status(order_id, token)
+        if not row['payment_qr_url']:
+            raise HTTPException(404, '현재 주문에는 QR 입금 안내가 없습니다')
+        return self.settings.payment_qr_file
 
     def order_status(self, order_id, token):
         with self.db.transaction() as db:
@@ -94,7 +117,7 @@ class Store:
             row = db.execute('SELECT id,status,amount,created_at,expires_at,paid_at,sent_at FROM orders WHERE id=? AND status_token_hash=?', (order_id, digest(token))).fetchone()
             if not row:
                 raise HTTPException(404, '주문을 확인할 수 없습니다')
-            return dict(row)
+            return {**dict(row), **self._payment_options(row)}
 
     def receive_deposit(self, data):
         payload = [normalize_name(data.depositor_name), data.amount, data.received_at.timestamp(), data.source]

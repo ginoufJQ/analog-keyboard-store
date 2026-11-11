@@ -29,7 +29,7 @@ class Settings:
     bank_holder: str = '미설정'
     live_sales: bool = False
     worker_enabled: bool = True
-    price: int = 3000
+    price: int = 1900
     order_hours: int = 24
     download_hours: int = 24
     order_limit: int = 10
@@ -38,6 +38,9 @@ class Settings:
     supported_keyboards: str = '실제 지원 목록 확인 필요'
     operations_reviewed: bool = False
     product_sha256: str = ''
+    toss_transfer_url: str = ''
+    payment_qr_file: Path | None = None
+    payment_qr_amount: int = 1900
 
     def validate(self):
         if min(len(self.admin_key), len(self.deposit_key)) < 32 or self.admin_key == self.deposit_key:
@@ -50,6 +53,12 @@ class Settings:
             raise ValueError('PUBLIC_BASE_URL must be an absolute origin')
         if '*' in self.allowed_origins:
             raise ValueError('CORS wildcard is forbidden')
+        if self.toss_transfer_url:
+            from urllib.parse import parse_qs
+            transfer = urlsplit(self.toss_transfer_url)
+            query = parse_qs(transfer.query)
+            if transfer.scheme != 'supertoss' or transfer.netloc != 'send' or not query.get('bank') or not query.get('accountNo', [''])[0].isdigit():
+                raise ValueError('TOSS_TRANSFER_URL 형식을 확인하세요')
         if self.live_sales:
             if parsed.scheme != 'https' or not self.bank_account or any(x in self.bank_account for x in ('모의', '미설정')) or self.bank_holder == '미설정':
                 raise ValueError('실판매에는 HTTPS 및 실제 계좌/예금주 설정이 필요합니다')
@@ -94,8 +103,11 @@ class Settings:
             bank_account=os.getenv('BANK_ACCOUNT', '모의 운영 — 실제 송금하지 마세요'),
             bank_holder=os.getenv('BANK_HOLDER', '미설정'), live_sales=os.getenv('LIVE_SALES', 'false').lower() == 'true',
             worker_enabled=os.getenv('WORKER_ENABLED', 'true').lower() == 'true',
-            price=int(os.getenv('PRICE_KRW', '3000')), product_version=os.getenv('PRODUCT_VERSION', '출시 준비 중'),
+            price=int(os.getenv('PRICE_KRW', '1900')), product_version=os.getenv('PRODUCT_VERSION', '출시 준비 중'),
             supported_keyboards=os.getenv('SUPPORTED_KEYBOARDS', '실제 지원 목록 확인 필요'),
             operations_reviewed=os.getenv('OPERATIONS_REVIEWED', 'false').lower() == 'true',
             product_sha256=os.getenv('PRODUCT_SHA256', ''),
+            toss_transfer_url=os.getenv('TOSS_TRANSFER_URL', ''),
+            payment_qr_file=Path(os.environ['PAYMENT_QR_FILE']) if os.getenv('PAYMENT_QR_FILE') else None,
+            payment_qr_amount=int(os.getenv('PAYMENT_QR_AMOUNT', '1900')),
         )
