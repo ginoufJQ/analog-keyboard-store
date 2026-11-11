@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.env
+var/
+private/
+*.sqlite*
+*.log
+.DS_Store
+.superpowers/
+dist/
+deploy/generated/
