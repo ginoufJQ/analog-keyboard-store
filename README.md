@@ -2,6 +2,8 @@
 
 FastAPI + SQLite로 동작하는 개인 개발자용 시스템입니다. **기본은 모의 운영이며 실제 돈이나 메일을 보내지 않습니다.** 입금 정보는 자동 매칭되지만, 은행 거래내역을 확인한 관리자의 승인 후에만 발송합니다.
 
+[공개 비상업적 체험 페이지](https://ginoufjq.github.io/analog-keyboard-store/) · [소스 저장소](https://github.com/ginoufJQ/analog-keyboard-store) · [자동 테스트](https://github.com/ginoufJQ/analog-keyboard-store/actions/workflows/test.yml)
+
 ## 빠른 실행 (macOS / Python 3.11+)
 
 ```sh

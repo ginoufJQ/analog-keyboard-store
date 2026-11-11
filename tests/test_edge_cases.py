@@ -102,3 +102,9 @@ def test_xss_is_not_rendered_with_innerhtml():
         folder='pages' if name=='demo.js' else 'web'
         js=(ROOT/folder/name).read_text()
         assert '.innerHTML' not in js and 'eval(' not in js
+
+
+@pytest.mark.parametrize('text', ['입금: 김철수: 3,000원\n입금: 홍길동: 5,000원', '입금: 김철수: 3,,000원'])
+def test_ambiguous_or_malformed_notification_is_not_guessed(env, deposit_auth, text):
+    c, _, _ = env
+    assert c.post('/api/deposits/parse', headers=deposit_auth, json={'text': text}).status_code == 422

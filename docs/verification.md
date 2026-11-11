@@ -2,7 +2,7 @@
 
 ## 로컬 자동 검증
 
-명령: `.venv/bin/python -m pytest -q` → **38 passed** (Python 3.14.5, macOS).
+명령: `.venv/bin/python -m pytest -q` → **40 passed** (Python 3.14.5, macOS).
 
 실패: 0. 외부 라이브러리 경고 1: Starlette 1.x 테스트 클라이언트가 httpx 사용 중단 예고를 표시합니다. 실제 테스트 실행·서버 요청은 정상이며, 테스트 HTTP 클라이언트 교체는 별도 의존성 업데이트 시 검토합니다.
 
@@ -41,11 +41,12 @@
 
 ## 독립 리뷰
 
-독립 코드 검토에서 2개 중요 문제 재현: 모의 상품을 실판매 설정으로 허용, 부분 저장된 모의 메일 파일을 성공으로 오판. 각각 실패 테스트 작성 후 실제 상품 해시/MOCK 차단, atomic mail write/부분파일 복구로 수정. 수정 후 전체 38개 통과. 검증된 은행 데이터 공급자는 연결되지 않았습니다.
+독립 코드 검토에서 2개 중요 문제 재현: 모의 상품을 실판매 설정으로 허용, 부분 저장된 모의 메일 파일을 성공으로 오판. 각각 실패 테스트 작성 후 실제 상품 해시/MOCK 차단, atomic mail write/부분파일 복구로 수정. 추가로 복수 알림·잘못된 금액 쉼표를 추측하지 않도록 실패 테스트 후 파서를 수정했습니다. 최종 전체 40개 통과. 검증된 은행 데이터 공급자는 연결되지 않았습니다.
 
 ## 외부 환경 — 구분 필요
 
-- GitHub Pages 배포/원격 CI: 배포 완료 후 아래 기록 갱신.
+- GitHub Pages 배포: **성공**, https://ginoufjq.github.io/analog-keyboard-store/ 에서 실제 화면과 체험 버튼 동작 확인. 첫 실행은 Pages 활성화 전에 시작되어 configure-pages 404로 실패했고, 설정 완료 후 동일 워크플로 재실행 성공. [배포 실행 기록](https://github.com/ginoufJQ/analog-keyboard-store/actions/runs/42962647265)
+- GitHub 원격 CI: Linux Python 3.11 / 3.14 환경 모두 성공. [테스트 실행 목록](https://github.com/ginoufJQ/analog-keyboard-store/actions/workflows/test.yml)
 - GitHub Pages에서 실제 주문 API 호출: **수행하지 않음**. Pages 상거래 제한 때문에 의도적으로 분리했으며, 실제 주문은 맥북 사이트에서 제공합니다.
 - iPhone 실기기 HTTPS POST / 오프라인 복구: **미검증**, 실제 도메인/터널/기기 설정 필요.
 - Cloudflare DNS/Tunnel/Access/WAF: **미설정·미검증**, 사용자 계정과 도메인 필요.

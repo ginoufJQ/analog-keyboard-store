@@ -63,7 +63,8 @@ class ParseInput(StrictModel):
 
 def parse_notification(text: str) -> dict:
     """Accept an explicit, documented format; never guess unknown Toss formats."""
-    match = re.search(r'입금\s*[:：]\s*(?P<name>[^\n:：]+?)\s*[:：]\s*(?P<amount>[\d,]+)\s*원', text)
-    if not match:
+    matches = list(re.finditer(r'입금\s*[:：]\s*(?P<name>[^\n:：]+?)\s*[:：]\s*(?P<amount>(?:\d{1,3}(?:,\d{3})+|\d+))\s*원', text))
+    if len(matches) != 1:
         raise ValueError('지원 형식: 입금: 김철수: 3,000원. 실제 알림 형식은 직접 확인 후 입력하세요.')
+    match = matches[0]
     return {'depositor_name': match['name'].strip(), 'amount': int(match['amount'].replace(',', '')), 'requires_confirmation': True}
